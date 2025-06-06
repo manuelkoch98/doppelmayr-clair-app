@@ -1,23 +1,36 @@
-import React, { createContext, useState, ReactNode } from 'react';
+import React, { createContext, useState, ReactNode } from "react";
+
+export interface User {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  locale?: string;
+  avatarImage?: string;
+}
 
 interface AuthContextType {
   token: string | null;
   setToken: (token: string | null) => void;
+  user: User | null;
+  setUser: (user: User | null) => void;
 }
 
-// Initialize the context with a default token so the app skips the login
-// screen and behaves as if the user is already authenticated.
 export const AuthContext = createContext<AuthContextType>({
-  token: 'DUMMY_TOKEN',
+  token: null,
   setToken: () => {},
+  user: null,
+  setUser: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Provide a non-null default token so the rest of the application
-  // treats the user as logged in immediately.
-  const [token, setToken] = useState<string | null>('DUMMY_TOKEN');
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
   return (
-    <AuthContext.Provider value={{ token, setToken }}>
+    <AuthContext.Provider value={{ token, setToken, user, setUser }}>
       {children}
     </AuthContext.Provider>
   );

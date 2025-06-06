@@ -1,114 +1,141 @@
-import { useContext, useEffect, useState } from 'react';
-import { Alert, Button, TextInput } from 'react-native';
-import { AuthContext } from '@/contexts/AuthContext';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
+import { useContext, useState } from "react";
+import {
+  Alert,
+  Button,
+  TextInput,
+  Image,
+  ActivityIndicator,
+  View,
+} from "react-native";
+import { AuthContext } from "@/contexts/AuthContext";
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedText } from "@/components/ThemedText";
+import { useRouter } from "expo-router";
+import PrimaryButton from "@/components/PrimaryButton";
+import CustomInputText from "@/components/CustomInputText";
+import LogoutButton from "@/components/LogoutButton";
 
 export default function ProfileScreen() {
-  const { token, setToken } = useContext(AuthContext);
-  const [user, setUser] = useState({
-    id: '',
-    username: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    language: '',
-    phone: '',
-  });
+  const { token, setToken, user, setUser } = useContext(AuthContext);
+  const router = useRouter();
 
-  useEffect(() => {
-    if (!token) return;
-    fetch('https://app-app-nightly-be-vcur.azurewebsites.net/api/v1/users/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((data) =>
-        setUser({
-          id: data.id ?? '',
-          username: data.username ?? '',
-          firstName: data.firstName ?? '',
-          lastName: data.lastName ?? '',
-          email: data.email ?? '',
-          language: data.language ?? '',
-          phone: data.phone ?? '',
-        })
-      )
-      .catch((err) => console.error(err));
-  }, [token]);
+  const [isSaving, setIsSaving] = useState(false); // <--- Neu
+
+  const [localUser, setLocalUser] = useState({
+    id: user?.id ?? "",
+    username: user?.username ?? "",
+    firstName: user?.firstName ?? "",
+    lastName: user?.lastName ?? "",
+    email: user?.email ?? "",
+    language: user?.locale ?? "",
+    phone: user?.phone ?? "",
+    avatarImage: user?.avatarImage ?? "",
+  });
 
   const handleSave = async () => {
     if (!token) return;
+
+    setIsSaving(true); // Start loading
+
+    console.log("Request to save user", {
+      id: localUser.id,
+      body: {
+        firstName: localUser.firstName,
+        lastName: localUser.lastName,
+        email: localUser.email,
+        phone: localUser.phone,
+      },
+      token,
+    });
+
     try {
       const response = await fetch(
-        'https://app-app-nightly-be-vcur.azurewebsites.net/api/v1/users/me',
+        `https://app-app-nightly-be-vcur.azurewebsites.net/api/v1/usermanagement/users/${localUser.id}`,
         {
-          method: 'PUT',
+          method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify(user),
+          body: JSON.stringify({
+            firstName: localUser.firstName,
+            lastName: localUser.lastName,
+            email: localUser.email,
+            phone: localUser.phone,
+          }),
         }
       );
 
       if (!response.ok) {
-        throw new Error('Update fehlgeschlagen');
+        const errorText = await response.text();
+        console.warn("Fehler beim Speichern:", response.status, errorText);
+        throw new Error("Update fehlgeschlagen");
       }
 
-      Alert.alert('Erfolg', 'Profil gespeichert');
+      setUser?.({ ...user, ...localUser });
+      Alert.alert("Erfolg", "Profil gespeichert");
     } catch (err) {
       console.error(err);
-      Alert.alert('Fehler', 'Profil konnte nicht gespeichert werden');
+      Alert.alert("Fehler", "Profil konnte nicht gespeichert werden");
+    } finally {
+      setIsSaving(false); // End loading
     }
   };
 
+  const avatarUrl = localUser.avatarImage?.trim()
+    ? localUser.avatarImage
+    : `https://i.pravatar.cc/100?u=${localUser.username}`;
+
   return (
     <ThemedView style={{ flex: 1, padding: 16 }}>
-      <ThemedText type="title" style={{ textAlign: 'center', marginBottom: 16 }}>
-        Mein Profil
-      </ThemedText>
-      <TextInput
-        placeholder="Benutzername"
-        value={user.username}
-        onChangeText={(t) => setUser({ ...user, username: t })}
-        autoCapitalize="none"
-        style={{ borderWidth: 1, marginVertical: 4, padding: 8 }}
+      <Image
+        source={{ uri: avatarUrl }}
+        style={{
+          width: 100,
+          height: 100,
+          borderRadius: 50,
+          alignSelf: "center",
+          marginBottom: 16,
+        }}
       />
-      <TextInput
-        placeholder="Vorname"
-        value={user.firstName}
-        onChangeText={(t) => setUser({ ...user, firstName: t })}
-        style={{ borderWidth: 1, marginVertical: 4, padding: 8 }}
+      <CustomInputText
+        label="Benutzername"
+        value={localUser.username}
+        readOnly
       />
-      <TextInput
-        placeholder="Nachname"
-        value={user.lastName}
-        onChangeText={(t) => setUser({ ...user, lastName: t })}
-        style={{ borderWidth: 1, marginVertical: 4, padding: 8 }}
+      <CustomInputText
+        label="Vorname"
+        value={localUser.firstName}
+        onChangeText={(t) => setLocalUser({ ...localUser, firstName: t })}
       />
-      <TextInput
-        placeholder="E-Mail"
-        value={user.email}
-        onChangeText={(t) => setUser({ ...user, email: t })}
+      <CustomInputText
+        label="Nachname"
+        value={localUser.lastName}
+        onChangeText={(t) => setLocalUser({ ...localUser, lastName: t })}
+      />
+      <CustomInputText
+        label="E-Mail"
+        value={localUser.email}
+        onChangeText={(t) => setLocalUser({ ...localUser, email: t })}
         keyboardType="email-address"
-        autoCapitalize="none"
-        style={{ borderWidth: 1, marginVertical: 4, padding: 8 }}
       />
-      <TextInput
-        placeholder="Sprache"
-        value={user.language}
-        onChangeText={(t) => setUser({ ...user, language: t })}
-        style={{ borderWidth: 1, marginVertical: 4, padding: 8 }}
-      />
-      <TextInput
-        placeholder="Telefon"
-        value={user.phone}
-        onChangeText={(t) => setUser({ ...user, phone: t })}
+      <CustomInputText
+        label="Telefon"
+        value={localUser.phone}
+        onChangeText={(t) => setLocalUser({ ...localUser, phone: t })}
         keyboardType="phone-pad"
-        style={{ borderWidth: 1, marginVertical: 4, padding: 8 }}
       />
-      <Button title="Speichern" onPress={handleSave} />
-      <Button title="Logout" onPress={() => setToken(null)} />
+      <CustomInputText label="Sprache" value={localUser.language} readOnly />
+
+      {isSaving ? (
+        <ActivityIndicator size="large" />
+      ) : (
+        <View style={{ marginTop: 24 }}>
+          <PrimaryButton title="Speichern" onPress={handleSave} />
+        </View>
+      )}
+
+      <LogoutButton />
     </ThemedView>
   );
 }
