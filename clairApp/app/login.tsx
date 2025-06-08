@@ -5,6 +5,10 @@ import { AuthContext } from "@/contexts/AuthContext";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import type { User } from "@/contexts/AuthContext"; // Pfad ggf. anpassen
+import PrimaryButton from "@/components/PrimaryButton";
+import CustomTextInput from "@/components/CustomInputText";
+import { Image } from "react-native";
+import headerImage from "@/assets/images/login-header.png";
 
 export default function LoginScreen() {
   const { setToken, setUser } = useContext(AuthContext); // <--- NEU
@@ -72,22 +76,28 @@ export default function LoginScreen() {
     <>
       <Stack.Screen options={{ title: "Login" }} />
       <ThemedView style={{ flex: 1, justifyContent: "center", padding: 16 }}>
-        <ThemedText type="title">Login</ThemedText>
-        <TextInput
+        <Image
+          source={headerImage}
+          style={{
+            width: "100%",
+            height: 160,
+            resizeMode: "contain",
+            marginBottom: 24,
+          }}
+        />
+        <CustomTextInput
           placeholder="Benutzername"
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
-          style={{ borderWidth: 1, marginVertical: 8, padding: 8 }}
         />
-        <TextInput
+        <CustomTextInput
           placeholder="Passwort"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          style={{ borderWidth: 1, marginVertical: 8, padding: 8 }}
         />
-        <Button title="Anmelden" onPress={handleLogin} />
+        <PrimaryButton title="Anmelden" onPress={handleLogin} />
       </ThemedView>
     </>
   );

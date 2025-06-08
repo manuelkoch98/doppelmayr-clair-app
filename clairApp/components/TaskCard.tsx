@@ -1,12 +1,17 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { highlightMatch } from "@/lib/highlightMatch"; // 🔁
 
 interface TaskCardProps {
   task: any;
+  searchTerm?: string; // 🔁 optionaler Suchbegriff
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  searchTerm = "",
+}) => {
   const {
     taskName,
     completedProperties,
@@ -17,10 +22,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     assigneeEmployee,
   } = task;
 
+  const nameParts = highlightMatch(taskName, searchTerm); // 🔁
   const progress = `${completedProperties}/${totalProperties}`;
   const path = parentElementNameTree?.join(" / ") ?? "";
   const statusIcon = result === "Done" ? "✅" : "⭕️";
-
   const formattedDate = new Date(dueDateTime).toLocaleDateString("de-AT");
 
   const avatarId = assigneeEmployee?.avatarImage?.id;
@@ -33,7 +38,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const handlePress = () => {
     router.push({
       pathname: "/task-detail",
-      params: { task: JSON.stringify(task) }, // oder nur task.id, je nach Architektur
+      params: { task: JSON.stringify(task) },
     });
   };
 
@@ -42,7 +47,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
       <View style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.title}>
-            {statusIcon} {taskName}
+            {statusIcon}{" "}
+            {nameParts.map((part, index) => (
+              <Text
+                key={index}
+                style={part.match ? styles.highlight : undefined}
+              >
+                {part.text}
+              </Text>
+            ))}
           </Text>
           <Text style={styles.progress}>{progress}</Text>
         </View>
@@ -78,6 +91,11 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: "bold",
     fontSize: 16,
+    flexWrap: "wrap",
+    flexShrink: 1,
+  },
+  highlight: {
+    backgroundColor: "#ffeb3b",
   },
   progress: {
     fontSize: 14,
