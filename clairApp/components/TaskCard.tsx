@@ -1,11 +1,11 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
-import { highlightMatch } from "@/lib/highlightMatch"; // 🔁
+import { highlightMatch } from "@/lib/highlightMatch";
 
 interface TaskCardProps {
   task: any;
-  searchTerm?: string; // 🔁 optionaler Suchbegriff
+  searchTerm?: string;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -22,11 +22,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     assigneeEmployee,
   } = task;
 
-  const nameParts = highlightMatch(taskName, searchTerm); // 🔁
+  const nameParts = highlightMatch(taskName, searchTerm);
   const progress = `${completedProperties}/${totalProperties}`;
   const path = parentElementNameTree?.join(" / ") ?? "";
   const statusIcon = result === "Done" ? "✅" : "⭕️";
-  const formattedDate = new Date(dueDateTime).toLocaleDateString("de-AT");
+
+  const dueDate = new Date(dueDateTime);
+  const now = new Date();
+  const isOverdue = dueDate < now && result !== "Done"; // ⏰
+
+  const formattedDate = dueDate.toLocaleDateString("de-AT");
 
   const avatarId = assigneeEmployee?.avatarImage?.id;
   const avatarUrl = avatarId
@@ -65,7 +70,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {avatarUrl && (
             <Image source={{ uri: avatarUrl }} style={styles.avatar} />
           )}
-          <Text style={styles.date}>{formattedDate}</Text>
+          <Text style={[styles.date, isOverdue && styles.dateOverdue]}>
+            {isOverdue ? "⚠️ " : ""}
+            {formattedDate}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -119,5 +127,9 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 14,
     color: "#555",
+  },
+  dateOverdue: {
+    color: "#d32f2f", // 🔴 Rot für überfällig
+    fontWeight: "600",
   },
 });

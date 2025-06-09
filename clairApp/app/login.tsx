@@ -1,17 +1,15 @@
+// LoginScreen.tsx
 import { Stack, useRouter } from "expo-router";
 import { useContext, useState } from "react";
-import { Alert, Button, TextInput, View } from "react-native";
+import { Alert, View, Image } from "react-native";
 import { AuthContext } from "@/contexts/AuthContext";
 import { ThemedView } from "@/components/ThemedView";
-import { ThemedText } from "@/components/ThemedText";
-import type { User } from "@/contexts/AuthContext"; // Pfad ggf. anpassen
 import PrimaryButton from "@/components/PrimaryButton";
 import CustomTextInput from "@/components/CustomInputText";
-import { Image } from "react-native";
 import headerImage from "@/assets/images/login-header.png";
 
 export default function LoginScreen() {
-  const { setToken, setUser } = useContext(AuthContext); // <--- NEU
+  const { setToken, setUser } = useContext(AuthContext);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
@@ -19,8 +17,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       const resortId = "resort-409a24db-159d-4455-80ab-057a23ba4728";
-
-      const response = await fetch(
+      const authResponse = await fetch(
         `https://app-app-nightly-be-vcur.azurewebsites.net/api/v1/usermanagement/users/${resortId}/authenticate`,
         {
           method: "POST",
@@ -29,43 +26,48 @@ export default function LoginScreen() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const message =
-          errorData.message || errorData.error || "Unbekannter Fehler";
-        throw new Error(message);
+      if (!authResponse.ok) {
+        const error = await authResponse.json().catch(() => ({}));
+        throw new Error(error.message || error.error || "Unbekannter Fehler");
       }
 
-      const data = await response.json();
-      console.log("Login response data:", data);
+      const authData = await authResponse.json();
+      const token = authData.jwtToken?.token;
+      const userGuid = authData.jwtToken?.userGuid;
 
-      const token = data.jwtToken?.token;
-      const userGuid = data.jwtToken?.userGuid;
-      const userData = data.user;
+      if (!token || !userGuid) throw new Error("Token oder Benutzer fehlt");
 
-      const avatarId = userData?.avatarImage?.id;
+      const userId = `user-${userGuid.toLowerCase()}`;
+      const userResponse = await fetch(
+        `https://app-app-nightly-be-vcur.azurewebsites.net/api/v1/usermanagement/users/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!userResponse.ok)
+        throw new Error("Benutzerdetails konnten nicht geladen werden");
+
+      const userDetails = await userResponse.json();
+
+      const avatarId = userDetails?.avatarImage?.id;
       const avatarUrl = avatarId
-        ? `https://app-app-nightly-be-vcur.azurewebsites.net/api/v1/images/resort-409a24db-159d-4455-80ab-057a23ba4728/image-${avatarId}/downloadtoken-271f8d09-c3b3-428c-ab50-ce0fdce5ca43`
+        ? `https://app-app-nightly-be-vcur.azurewebsites.net/api/v1/images/${resortId}/${avatarId}`
         : undefined;
 
-      const user: User = {
-        id: `user-${userGuid.toLowerCase()}`,
-        username: username,
-        firstName: userData?.firstName ?? "",
-        lastName: userData?.lastName ?? "",
-        email: userData?.email ?? "",
-        phone: userData?.phone ?? "",
-        locale: userData?.locale ?? "de",
+      setToken(token);
+      setUser({
+        id: userId,
+        username: userDetails.username ?? username,
+        firstName: userDetails.firstName ?? "",
+        lastName: userDetails.lastName ?? "",
+        email: userDetails.email ?? "",
+        phone: userDetails.phone ?? "",
+        locale: userDetails.locale ?? "de",
         avatarImage: avatarUrl,
-      };
+      });
 
-      if (token && user.id) {
-        setToken(token);
-        setUser(user);
-        router.replace("/");
-      } else {
-        throw new Error("Token oder Benutzer fehlt");
-      }
+      router.replace("/");
     } catch (err) {
       console.error(err);
       Alert.alert("Fehler", "Anmeldung nicht möglich");
