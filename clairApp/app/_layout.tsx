@@ -38,7 +38,7 @@ function RootNavigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
         {token ? (
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
         ) : (
           <Stack.Screen name="login" options={{ headerShown: false }} />
         )}

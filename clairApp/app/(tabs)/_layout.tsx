@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform } from "react-native";
+import { DrawerToggleButton } from "@react-navigation/drawer";
 
 import { HapticTab } from "@/components/HapticTab";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -19,6 +20,7 @@ export default function TabLayout() {
         headerStyle: { backgroundColor: Colors[colorScheme ?? "light"].tint },
         headerTitleStyle: { color: "#ffffff" },
         headerTintColor: "#ffffff",
+        headerLeft: () => <DrawerToggleButton tintColor="#ffffff" />, 
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
